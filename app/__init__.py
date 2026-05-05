@@ -1,0 +1,1 @@
+"""Reader mode FastAPI service."""
