@@ -59,3 +59,13 @@ def test_reader_endpoint_rejects_invalid_url() -> None:
     response = client.post("/reader", json={"url": "not-a-url"})
 
     assert response.status_code == 422
+
+
+def test_reader_get_without_url_returns_form() -> None:
+    client = TestClient(app)
+
+    response = client.get("/reader")
+
+    assert response.status_code == 200
+    assert "Reader Mode" in response.text
+    assert 'name="url"' in response.text

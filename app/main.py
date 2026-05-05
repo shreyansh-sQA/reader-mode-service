@@ -6,7 +6,7 @@ import ipaddress
 import re
 import socket
 from dataclasses import dataclass
-from typing import Iterable
+from typing import Iterable, Optional
 from urllib.parse import urljoin, urlparse
 
 import bleach
@@ -137,8 +137,11 @@ async def reader(payload: ReaderRequest) -> HTMLResponse:
 
 
 @app.get("/reader", response_class=HTMLResponse)
-async def reader_link(url: AnyHttpUrl = Query(...)) -> HTMLResponse:
+async def reader_link(url: Optional[AnyHttpUrl] = Query(default=None)) -> HTMLResponse:
     """Browser-friendly reader endpoint for opening a URL directly."""
+    if url is None:
+        return HTMLResponse(render_form())
+
     return await render_reader_url(str(url))
 
 
@@ -495,6 +498,100 @@ def render_document(title: str, article_html: str, source_url: str) -> str:
     <article>
       {article_html}
     </article>
+  </main>
+</body>
+</html>
+"""
+
+
+def render_form() -> str:
+    return """<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reader Mode</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --page: #f8f7f2;
+      --ink: #1f2933;
+      --muted: #65707a;
+      --rule: #d8d3c7;
+      --accent: #0b6b75;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --page: #16191d;
+        --ink: #e8e5dc;
+        --muted: #a8b0b8;
+        --rule: #343941;
+        --accent: #74d0dc;
+      }
+    }
+    body {
+      margin: 0;
+      background: var(--page);
+      color: var(--ink);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main {
+      box-sizing: border-box;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 56px 22px;
+    }
+    h1 {
+      font-size: clamp(2rem, 8vw, 3.25rem);
+      line-height: 1.1;
+      margin: 0 0 14px;
+    }
+    p {
+      color: var(--muted);
+      font-size: 1.05rem;
+      line-height: 1.6;
+      margin: 0 0 28px;
+    }
+    form {
+      display: flex;
+      gap: 10px;
+    }
+    input, button {
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      box-sizing: border-box;
+      font: inherit;
+      min-height: 48px;
+      padding: 0 14px;
+    }
+    input {
+      background: transparent;
+      color: var(--ink);
+      flex: 1;
+      min-width: 0;
+    }
+    button {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--page);
+      cursor: pointer;
+      font-weight: 700;
+    }
+    @media (max-width: 620px) {
+      form {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Reader Mode</h1>
+    <p>Paste an article URL and open a clean reading view.</p>
+    <form method="get" action="/reader">
+      <input name="url" type="url" placeholder="https://example.com/article" required autofocus>
+      <button type="submit">Open</button>
+    </form>
   </main>
 </body>
 </html>
