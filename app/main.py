@@ -12,7 +12,7 @@ from urllib.parse import urljoin, urlparse
 import bleach
 import httpx
 from bs4 import BeautifulSoup, Comment
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import HTMLResponse
 from pydantic import AnyHttpUrl, BaseModel
 from readability import Document
@@ -133,8 +133,18 @@ app = FastAPI(
 @app.post("/reader", response_class=HTMLResponse)
 async def reader(payload: ReaderRequest) -> HTMLResponse:
     """Return a clean, readable HTML version of a fetched article page."""
+    return await render_reader_url(str(payload.url))
+
+
+@app.get("/reader", response_class=HTMLResponse)
+async def reader_link(url: AnyHttpUrl = Query(...)) -> HTMLResponse:
+    """Browser-friendly reader endpoint for opening a URL directly."""
+    return await render_reader_url(str(url))
+
+
+async def render_reader_url(url: str) -> HTMLResponse:
     try:
-        fetched = await fetch_page(str(payload.url))
+        fetched = await fetch_page(url)
         document = build_reader_html(fetched.html, fetched.url)
     except ReaderServiceError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
